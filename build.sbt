@@ -9,3 +9,4 @@ libraryDependencies ++= Seq("com.typesafe.akka" %% "akka-http-spray-json" % "10.
 "com.lightbend.akka" %% "akka-stream-alpakka-file" % "0.14",
 "com.typesafe.akka" %% "akka-actor" % "2.5.6")
 
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
