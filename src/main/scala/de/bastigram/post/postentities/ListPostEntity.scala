@@ -2,7 +2,7 @@ package de.bastigram.post.postentities
 
 import de.bastigram.model.CompiledPost
 import de.bastigram.post.PostCompiler
-import de.bastigram.post.PostCompiler.VariableDeclaration
+import de.bastigram.post.PostCompiler.{VariableDeclaration, VariableMemory}
 
 import scala.concurrent.Future
 
@@ -14,7 +14,7 @@ case object ListPostEntity extends PostEntityTraitMatcher {
 
   override def postEntityFromInstruction(
       matchInstruction: PostCompiler.Instruction,
-      postCache: (String) => Option[CompiledPost],postSlug: String): Future[(String, PostEntityTrait)] = matchInstruction match {
+      postCache: (String) => Option[CompiledPost],postSlug: String,memory: VariableMemory): Future[(String, PostEntityTrait)] = matchInstruction match {
     case VariableDeclaration(variable, statement) =>
       val args = PostEntity.strToArgList(statement.stripPrefix("[list")).toList
       Future.successful((variable, ListPostEntity(args)))

@@ -2,7 +2,7 @@ package de.bastigram.post.postentities
 
 import de.bastigram.model.CompiledPost
 import de.bastigram.post.PostCompiler
-import de.bastigram.post.PostCompiler.NopInst
+import de.bastigram.post.PostCompiler.{NopInst, VariableMemory}
 
 import scala.concurrent.Future
 
@@ -17,7 +17,7 @@ case object PostBodyEntity extends PostEntityTraitMatcher {
 
   override def postEntityFromInstruction(
       matchInstruction: PostCompiler.Instruction,
-      postCache: (String) => Option[CompiledPost],postSlug: String): Future[(String, PostEntityTrait)] = matchInstruction match {
+      postCache: (String) => Option[CompiledPost],postSlug: String,memory: VariableMemory): Future[(String, PostEntityTrait)] = matchInstruction match {
     case NopInst(content) => Future.successful(("postBody", PostBodyEntity(content)))
 
   }

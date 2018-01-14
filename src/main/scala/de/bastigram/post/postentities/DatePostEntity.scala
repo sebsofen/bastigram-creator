@@ -3,7 +3,7 @@ package de.bastigram.post.postentities
 import com.typesafe.scalalogging.Logger
 import de.bastigram.model.CompiledPost
 import de.bastigram.post.PostCompiler
-import de.bastigram.post.PostCompiler.VariableDeclaration
+import de.bastigram.post.PostCompiler.{VariableDeclaration, VariableMemory}
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -17,7 +17,8 @@ case object DatePostEntity extends PostEntityTraitMatcher {
 
   override def postEntityFromInstruction(
       matchInstruction: PostCompiler.Instruction,
-      postCache: (String) => Option[CompiledPost],postSlug: String): Future[(String, PostEntityTrait)] = matchInstruction match {
+      postCache: (String) => Option[CompiledPost],postSlug: String,
+      memory: VariableMemory): Future[(String, PostEntityTrait)] = matchInstruction match {
     case VariableDeclaration(variable, statement) =>
       val datestring = statement.stripPrefix("[date").stripSuffix("]")
       parseDate(datestring) match {

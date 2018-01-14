@@ -7,12 +7,17 @@ import java.text.SimpleDateFormat
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import de.bastigram.BastigramFile
 import de.bastigram.api.BastigramExceptions.PostAlreadyExistsException
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
-
+object PostWriter {
+  def apply(settings: PlainPostSourceFromDirSettings)(
+    implicit system: ActorSystem,
+    _ec: ExecutionContextExecutor,
+    materializer: ActorMaterializer) : PostWriter = new PostWriter(settings)
+}
 class PostWriter(settings: PlainPostSourceFromDirSettings)(
     implicit system: ActorSystem,
     _ec: ExecutionContextExecutor,
@@ -58,12 +63,13 @@ class PostWriter(settings: PlainPostSourceFromDirSettings)(
             val mediaFile =
               Paths.get(settings.POSTS_DIR, slug, mediaFileObj.name).toFile
             writeFileContent(mediaFile, mediaFileObj.content)
-        }
+        }.runWith(Sink.ignore)
 
       for {
         _ <- readmeWriteFuture
         _ <- releaseWriteFuture
         _ <- hiddenWriteFuture
+        _ <- mediaFileWriter
       } yield Done
 
     }
@@ -84,3 +90,4 @@ class PostWriter(settings: PlainPostSourceFromDirSettings)(
 
 
 }
+

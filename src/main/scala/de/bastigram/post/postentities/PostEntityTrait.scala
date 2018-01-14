@@ -2,7 +2,7 @@ package de.bastigram.post.postentities
 
 import de.bastigram.model.CompiledPost
 import de.bastigram.post.PostCompiler
-
+import de.bastigram.post.PostCompiler.VariableMemory
 
 import scala.concurrent.Future
 
@@ -22,8 +22,10 @@ trait PostEntityTrait {
 trait PostEntityTraitMatcher {
 
   def matchPost(matchInstruction: PostCompiler.Instruction): Boolean
-  def postEntityFromInstruction(matchInstruction: PostCompiler.Instruction,
-                                postCache: String => Option[CompiledPost],postSlug: String): Future[(String, PostEntityTrait)]
+  def postEntityFromInstruction(
+      matchInstruction: PostCompiler.Instruction,
+      postCache: String => Option[CompiledPost],
+      postSlug: String,memory: VariableMemory): Future[(String, PostEntityTrait)]
 }
 
 /**
@@ -31,33 +33,76 @@ trait PostEntityTraitMatcher {
   */
 case object PostEntity {
   val entityMatcherList: Seq[PostEntityTraitMatcher] =
-    Seq(DummyPostEntity, ImportStatementPostEntity, PostBodyEntity, ListPostEntity, ImagePostEntity, DatePostEntity, MapPostEntity)
+    Seq(DummyPostEntity,
+        ImportStatementPostEntity,
+        PostBodyEntity,
+        ListPostEntity,
+        ImagePostEntity,
+        DatePostEntity,
+        MapPostEntity,
+        YoutubePostEntity,
+        LabelPostEntity)
 
   /**
     * TODO: might be better placed in own trait
-    * @param str
+    * @param string
     * @return
     */
-  def strToArgMap(str: String): Map[String, String] = {
-    str
+  def strToArgMap(string: String): Map[String, String] =
+    string
       .stripPrefix("[")
-      .stripSuffix("]")
-      .split(" ")
-      .filter(p => p.split("=").length == 2)
-      .map { s =>
-        val argVal = s.split("=")
-        argVal(0).toLowerCase() -> argVal(1)
-      }
-      .toMap
-  }
+      .foldLeft[(Map[String, String], String, String, MapFoldState)](
+        (Map(), "", "", NameBuilder(""))) {
+        case ((map, oldName, oldValue, mapFoldState), char) =>
+          mapFoldState match {
 
-  def strToArgList(str: String): Array[String] = {
+            case x @ NameBuilder(name) if char != '=' =>
+              (map, oldName, oldValue, x.copy(name = name + char))
+
+            case NameBuilder(name) if char == '=' =>
+              (map, name, "", ValueBuilder("", None))
+
+            case x @ ValueBuilder(value, endChar) if endChar.isEmpty =>
+              char match {
+                case '"' =>
+                  (map, oldName, oldValue, x.copy(endChar = Some("\"")))
+                case _ =>
+                  (map,
+                   oldName,
+                   oldValue,
+                   x.copy(value = x.value + char, endChar = Some(" ]")))
+              }
+
+            case x @ ValueBuilder(value, endChar) if endChar.isDefined =>
+              char match {
+
+                case chr if endChar.get contains chr  =>
+                  (map + (oldName.replaceAll(" ", "") -> x.value),
+                   "",
+                   "",
+                   NameBuilder(""))
+
+                case _ =>
+                  (map, oldName, oldValue, x.copy(value = x.value + char))
+
+              }
+
+          }
+
+      }
+      ._1
+
+  abstract class MapFoldState
+  case class NameBuilder(name: String) extends MapFoldState
+  case class ValueBuilder(value: String, endChar: Option[String])
+      extends MapFoldState
+
+  def strToArgList(str: String): Array[String] =
     str
       .stripPrefix("[")
       .stripSuffix("]")
       .split(" ")
       .filter(_ != "")
-  }
 
 }
 
